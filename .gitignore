@@ -3,3 +3,5 @@ dist/
 database.sqlite
 *.sqlite
 .env
+*.sqlite-shm
+*.sqlite-wal
