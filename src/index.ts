@@ -16,6 +16,19 @@ app.get("/", (_req, res) => {
     });
 });
 
+// GET /identify - helpful message for browser visitors
+app.get("/identify", (_req, res) => {
+    res.json({
+        message: "This endpoint accepts POST requests with JSON body",
+        usage: {
+            method: "POST",
+            url: "/identify",
+            body: { email: "string (optional)", phoneNumber: "string (optional)" },
+            note: "At least one of email or phoneNumber must be provided",
+        },
+    });
+});
+
 // Main endpoint
 app.post("/identify", (req, res) => {
     try {
