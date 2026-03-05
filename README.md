@@ -4,9 +4,9 @@ A backend web service that identifies and keeps track of a customer's identity a
 
 ## 🚀 Live Endpoint
 
-**Base URL:** `https://bitespeed-identity-xxxx.onrender.com`
+**Base URL:** `https://bitespeed-identity-fzhc.onrender.com`
 
-**POST** `/identify`
+**POST** `https://bitespeed-identity-fzhc.onrender.com/identify`
 
 ## Tech Stack
 
