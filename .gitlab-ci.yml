@@ -1,0 +1,59 @@
+stages:
+  - build
+  - test
+  - docker
+
+variables:
+  IMAGE_TAG: "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA"
+  IMAGE_LATEST: "$CI_REGISTRY_IMAGE:latest"
+
+# --- Build stage: install deps, type-check / compile TypeScript ---
+build:
+  stage: build
+  image: node:20-alpine
+  cache:
+    key: "$CI_COMMIT_REF_SLUG-npm"
+    paths:
+      - node_modules/
+  script:
+    - npm ci
+    - npm run build
+  artifacts:
+    paths:
+      - dist/
+    expire_in: 1 hour
+
+# --- Test stage: smoke-test the actual /identify endpoint end-to-end.
+# There's no unit test suite in this repo yet — rather than fake a
+# coverage number, this spins the compiled server up for real and
+# hits the endpoint the way a client would. ---
+smoke-test:
+  stage: test
+  image: node:20-alpine
+  needs: ["build"]
+  script:
+    - npm ci --omit=dev
+    - node dist/index.js &
+    - sleep 2
+    - >
+      curl --fail -X POST http://localhost:3000/identify
+      -H "Content-Type: application/json"
+      -d '{"email":"doc@hillvalley.edu","phoneNumber":"123456"}'
+
+# --- Docker stage: build and push the image to the GitLab Container
+# Registry. Only runs on the default branch so feature branches don't
+# publish images. ---
+docker-build:
+  stage: docker
+  image: docker:24
+  services:
+    - docker:24-dind
+  needs: ["smoke-test"]
+  rules:
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+  before_script:
+    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
+  script:
+    - docker build -t "$IMAGE_TAG" -t "$IMAGE_LATEST" .
+    - docker push "$IMAGE_TAG"
+    - docker push "$IMAGE_LATEST"

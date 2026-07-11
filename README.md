@@ -13,6 +13,8 @@ A backend web service that identifies and keeps track of a customer's identity a
 - **Runtime:** Node.js with TypeScript
 - **Framework:** Express.js
 - **Database:** SQLite (via better-sqlite3)
+- **Containerization:** Docker (multi-stage build)
+- **CI/CD:** GitLab CI (build, smoke-test, image push to Container Registry)
 
 ## How It Works
 
@@ -82,6 +84,26 @@ curl -X POST http://localhost:3000/identify \
   -d '{"email": "mcfly@hillvalley.edu", "phoneNumber": "123456"}'
 ```
 
+## Running with Docker
+
+```bash
+# Build the image
+docker build -t bitespeed-identity .
+
+# Run the container
+docker run -p 3000:3000 bitespeed-identity
+```
+
+The image uses a multi-stage build — TypeScript is compiled in a build stage, and only the compiled output plus production dependencies are copied into the final runtime image, keeping it small. A container-level health check hits `GET /` to confirm the service is up.
+
+## CI/CD
+
+This repo ships with a GitLab CI pipeline (`.gitlab-ci.yml`) that runs on every push:
+
+1. **build** — installs dependencies and type-checks/compiles the TypeScript source
+2. **smoke-test** — starts the compiled server and sends a real `POST /identify` request to confirm the endpoint actually works end-to-end, rather than relying on a unit test suite
+3. **docker-build** — builds the Docker image and pushes it to the GitLab Container Registry (only on the default branch)
+
 ## Project Structure
 
 ```
@@ -89,6 +111,9 @@ curl -X POST http://localhost:3000/identify \
 │   ├── index.ts        # Express server & /identify endpoint
 │   ├── database.ts     # SQLite database setup & Contact table
 │   └── identify.ts     # Core identity reconciliation logic
+├── Dockerfile           # Multi-stage build for a production image
+├── .dockerignore
+├── .gitlab-ci.yml       # CI pipeline: build, smoke-test, image push
 ├── tsconfig.json
 ├── package.json
 └── README.md
