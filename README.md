@@ -14,7 +14,8 @@ A backend web service that identifies and keeps track of a customer's identity a
 - **Framework:** Express.js
 - **Database:** SQLite (via better-sqlite3)
 - **Containerization:** Docker (multi-stage build)
-- **CI/CD:** GitLab CI (build, smoke-test, image push to Container Registry)
+- **Testing:** Jest + ts-jest (in-memory SQLite)
+- **CI/CD:** GitLab CI (build, unit-test, smoke-test, image push to Container Registry)
 
 ## How It Works
 
@@ -67,6 +68,9 @@ npm run build
 
 # Start production server
 npm start
+
+# Run the unit test suite (in-memory SQLite, no server required)
+npm test
 ```
 
 The server runs on `http://localhost:3000` by default.
@@ -101,19 +105,23 @@ The image uses a multi-stage build — TypeScript is compiled in a build stage, 
 This repo ships with a GitLab CI pipeline (`.gitlab-ci.yml`) that runs on every push:
 
 1. **build** — installs dependencies and type-checks/compiles the TypeScript source
-2. **smoke-test** — starts the compiled server and sends a real `POST /identify` request to confirm the endpoint actually works end-to-end, rather than relying on a unit test suite
-3. **docker-build** — builds the Docker image and pushes it to the GitLab Container Registry (only on the default branch)
+2. **unit-test** — runs the Jest suite against the reconciliation logic in isolation, using an in-memory SQLite database
+3. **smoke-test** — starts the compiled server and sends a real `POST /identify` request to confirm the endpoint actually works end-to-end
+4. **docker-build** — builds the Docker image and pushes it to the GitLab Container Registry (only on the default branch)
 
 ## Project Structure
 
 ```
 ├── src/
-│   ├── index.ts        # Express server & /identify endpoint
-│   ├── database.ts     # SQLite database setup & Contact table
-│   └── identify.ts     # Core identity reconciliation logic
-├── Dockerfile           # Multi-stage build for a production image
+│   ├── index.ts             # Express server & /identify endpoint
+│   ├── database.ts          # SQLite database setup & Contact table
+│   ├── identify.ts          # Core identity reconciliation logic
+│   └── __tests__/
+│       └── identify.test.ts # Jest unit tests (in-memory SQLite)
+├── Dockerfile                # Multi-stage build for a production image
 ├── .dockerignore
-├── .gitlab-ci.yml       # CI pipeline: build, smoke-test, image push
+├── .gitlab-ci.yml            # CI pipeline: build, unit-test, smoke-test, image push
+├── jest.config.js
 ├── tsconfig.json
 ├── package.json
 └── README.md

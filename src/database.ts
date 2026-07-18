@@ -1,7 +1,7 @@
 import Database, { Database as DatabaseType } from "better-sqlite3";
 import path from "path";
 
-const dbPath = path.join(__dirname, "..", "database.sqlite");
+const dbPath = process.env.DB_PATH || path.join(__dirname, "..", "database.sqlite");
 const db: DatabaseType = new Database(dbPath);
 
 // Enable WAL mode for better performance

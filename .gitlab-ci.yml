@@ -23,10 +23,21 @@ build:
       - dist/
     expire_in: 1 hour
 
-# --- Test stage: smoke-test the actual /identify endpoint end-to-end.
-# There's no unit test suite in this repo yet — rather than fake a
-# coverage number, this spins the compiled server up for real and
-# hits the endpoint the way a client would. ---
+# --- Test stage: unit-test the reconciliation logic in isolation
+# (in-memory SQLite, no server involved), then smoke-test the actual
+# /identify endpoint end-to-end against the compiled build. ---
+unit-test:
+  stage: test
+  image: node:20-alpine
+  needs: ["build"]
+  cache:
+    key: "$CI_COMMIT_REF_SLUG-npm"
+    paths:
+      - node_modules/
+  script:
+    - npm ci
+    - npm test
+
 smoke-test:
   stage: test
   image: node:20-alpine
@@ -48,7 +59,7 @@ docker-build:
   image: docker:24
   services:
     - docker:24-dind
-  needs: ["smoke-test"]
+  needs: ["unit-test", "smoke-test"]
   rules:
     - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
   before_script:
